@@ -18,6 +18,13 @@ keep_prob_5 = tf.placeholder(tf.float32)
 keep_prob_75 = tf.placeholder(tf.float32)
 
 
+def get_weight(shape, regularizer):
+    w = tf.Variable(tf.truncated_normal(shape, stddev=0.1))
+    if regularizer != None:
+        tf.add_to_collection('losses', tf.contrib.layers.l2_regularizer(regularizer)(w))
+    return w
+
+
 def weightVariable(shape):
     init = tf.random_normal(shape, stddev=0.01)
     return tf.Variable(init)
@@ -42,10 +49,10 @@ def dropout(x, keep):
 
 def cnnLayer():
     # 第一层
-    W1 = weightVariable([3, 3, 3, 64])  # 卷积核大小(3,3)， 输入通道(3)， 输出通道(64)
+    W1 = weightVariable([3, 3, 3, 64])  # 卷积核大小(3,3)， 输入通道(3)， 输出通道(32)
     b1 = biasVariable([64])
     # 卷积
-    conv1 = tf.nn.relu(conv2d(x, W1) + b1)
+    conv1 = tf.nn.leaky_relu(conv2d(x, W1) + b1)
     # 池化
     pool1 = maxPool(conv1)
     # 减少过拟合，随机让某些权重不更新
@@ -54,18 +61,18 @@ def cnnLayer():
     # 第二层
     W2 = weightVariable([3, 3, 64, 128])
     b2 = biasVariable([128])
-    conv2 = tf.nn.relu(conv2d(drop1, W2) + b2)
+    conv2 = tf.nn.leaky_relu(conv2d(drop1, W2) + b2)
     pool2 = maxPool(conv2)
     drop2 = dropout(pool2, keep_prob_5)
 
     # 第三层
     W3 = weightVariable([3, 3, 128, 256])
     b3 = biasVariable([256])
-    conv3 = tf.nn.relu(conv2d(drop2, W3) + b3)
+    conv3 = tf.nn.leaky_relu(conv2d(drop2, W3) + b3)
 
     W4 = weightVariable([3, 3, 256, 256])
     b4 = biasVariable([256])
-    conv4 = tf.nn.relu(conv2d(conv3, W4) + b4)
+    conv4 = tf.nn.leaky_relu(conv2d(conv3, W4) + b4)
 
     pool3 = maxPool(conv4)
     drop3 = dropout(pool3, keep_prob_5)
@@ -73,30 +80,42 @@ def cnnLayer():
     # 第4层
     W5 = weightVariable([3, 3, 256, 512])
     b5 = biasVariable([512])
-    conv5 = tf.nn.relu(conv2d(drop3, W5) + b5)
+    conv5 = tf.nn.leaky_relu(conv2d(drop3, W5) + b5)
 
     W6 = weightVariable([3, 3, 512, 512])
     b6 = biasVariable([512])
-    conv6 = tf.nn.relu(conv2d(conv5, W6) + b6)
+    conv6 = tf.nn.leaky_relu(conv2d(conv5, W6) + b6)
 
     pool4 = maxPool(conv6)
     drop4 = dropout(pool4, keep_prob_5)
 
-    # 全连接层
-    Wf = weightVariable([4 * 4 * 512, 512])
-    bf = biasVariable([512])
-    drop3_flat = tf.reshape(drop4, [-1, 4 * 4 * 512])
-    dense = tf.nn.relu(tf.matmul(drop3_flat, Wf) + bf)
-    dropf1 = dropout(dense, keep_prob_75)
+    # 第5层
+    W7 = weightVariable([3, 3, 512, 512])
+    b7 = biasVariable([512])
+    conv7 = tf.nn.leaky_relu(conv2d(drop4, W7) + b7)
+
+    W8 = weightVariable([3, 3, 512, 512])
+    b8 = biasVariable([512])
+    conv8 = tf.nn.leaky_relu(conv2d(conv7, W8) + b8)
+
+    pool5 = maxPool(conv8)
+    drop5 = dropout(pool5, keep_prob_5)
+
+    # 全连接层1
+    Wf1 = get_weight([2 * 2 * 512, 512], regularizer=0.01)
+    bf1 = biasVariable([512])
+    drop5_flat = tf.reshape(drop5, [-1, 2 * 2 * 512])
+    dense1 = tf.nn.leaky_relu(tf.matmul(drop5_flat, Wf1) + bf1)
+    dropf1 = dropout(dense1, keep_prob_75)
 
     # 全连接层2
-    Wf2 = weightVariable([512, 512])
+    Wf2 = get_weight([512, 512], regularizer=0.01)
     bf2 = biasVariable([512])
-    dense2 = tf.nn.relu(tf.matmul(dropf1, Wf2) + bf2)
+    dense2 = tf.nn.leaky_relu(tf.matmul(dropf1, Wf2) + bf2)
     dropf2 = dropout(dense2, keep_prob_75)
 
     # 输出层
-    Wout = weightVariable([512, 10])
+    Wout = get_weight([512, 10], regularizer=0.01)
     bout = biasVariable([10])
     # out = tf.matmul(dropf, Wout) + bout
     out = tf.add(tf.matmul(dropf2, Wout), bout)
@@ -109,7 +128,7 @@ predict = tf.argmax(output, 1)
 saver = tf.train.Saver()
 sess = tf.Session()
 # saver.restore(sess, tf.train.latest_checkpoint('./model'))
-saver.restore(sess, './model/vgg9.model-9500')
+saver.restore(sess, './model/vgg11_reg_leaky5.model-8000')
 
 
 def is_my_face(image):
@@ -164,7 +183,7 @@ detector = dlib.get_frontal_face_detector()
 # cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
 import cv2
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import *
 from PyQt5.QtMultimedia import *
@@ -172,7 +191,7 @@ from GUI import Ui_MainWindow
 import sys
 import numpy as np
 from ctypes import *
-
+image_path = ''
 
 class myMainWindow(Ui_MainWindow, QMainWindow):
     def __init__(self):
@@ -180,8 +199,8 @@ class myMainWindow(Ui_MainWindow, QMainWindow):
         self.setupUi(self)
 
         self.btn_open.clicked.connect(self.open_image)   # 打开视频文件按钮
-        # self.btn_play.clicked.connect(self.playVideo)       # play
-        self.btn_stop.clicked.connect(self.pauseVideo)       # pause
+        self.btn_play.clicked.connect(self.recognize)       # play
+        self.btn_stop.clicked.connect(self.clean_image)       # pause
 
 # 视频流代码 OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 #         self.ui = Ui_MainWindow
@@ -201,18 +220,46 @@ class myMainWindow(Ui_MainWindow, QMainWindow):
         self.stopEvent = threading.Event()
         self.stopEvent.clear()
 
-
     def open_image(self):
-        imgName, imgType = QFileDialog.getOpenFileName(self, "打开图片", "", "*.jpg;;*.png;;All Files(*)")
+        imgName, imgType = QFileDialog.getOpenFileName(self, "open image", "", "*.jpg;;*.png;;All Files(*)")
         # jpg = QPixmap(imgName).scaled(self.DispalyLabel.width(), self.DispalyLabel.height())
+        global image_path
+        image_path = imgName
+        print(image_path)
         jpg = QPixmap(imgName)
         self.DispalyLabel.setPixmap(jpg)
 
     def recognize(self):
-        self.player.play()
+        img = cv2.imread(image_path)
+        gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        dets = detector(gray_image, 1)
+        if not len(dets):
+            print('Can`t get face.')
+            # cv2.imshow('img', img)
+            # key = cv2.waitKey(30) & 0xff
+            # if key == 27:
+            #     sys.exit(0)
 
-    def pauseVideo(self):
-        self.player.pause()
+        for i, d in enumerate(dets):
+            x1 = d.top() if d.top() > 0 else 0
+            y1 = d.bottom() if d.bottom() > 0 else 0
+            x2 = d.left() if d.left() > 0 else 0
+            y2 = d.right() if d.right() > 0 else 0
+            face = img[x1:y1, x2:y2]
+            # 调整图片的尺寸
+            face = cv2.resize(face, (size, size))
+            print('Is this my face? %s' % is_my_face(face))
+
+            cv2.rectangle(img, (x2, x1), (y2, y1), (255, 0, 0), 3)
+            put_text(face, img, x2, x1)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        image = QImage(img.data, img.shape[1], img.shape[0], QImage.Format_RGB888)
+        self.DispalyLabel.setPixmap(QPixmap.fromImage(image))
+
+    def clean_image(self):
+        global image_path
+        image_path = ''
+        self.DispalyLabel.clear()
 
 
 # 视频流代码 OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
