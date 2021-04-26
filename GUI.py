@@ -8,19 +8,19 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1010, 980)
+        MainWindow.resize(660, 678)
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        self.lab1 = QtWidgets.QLabel(self.centralwidget)
-        self.lab1.setGeometry(QtCore.QRect(10, 420, 91, 31))
-        self.lab1.setObjectName("lab1")
-        self.lab1.setText("模式选择")
+        self.text = QtWidgets.QLineEdit(self.centralwidget)
+        self.text.setGeometry(QtCore.QRect(10, 510, 640, 20))
+        self.text.setObjectName("lab1")
+        # self.text.setText("")
 
         self.widget = QtWidgets.QWidget(self.centralwidget)
-        self.widget.setGeometry(QtCore.QRect(0, 400, 220, 220))
+        self.widget.setGeometry(QtCore.QRect(10, 500, 220, 220))
         self.widget.setObjectName("widget")
 
         # self.label = QtWidgets.QLabel(self.widget)
@@ -28,38 +28,38 @@ class Ui_MainWindow(object):
         # self.label.setObjectName("label")
 
         self.lab2 = QtWidgets.QLabel(self.widget)
-        self.lab2.setGeometry(QtCore.QRect(50, 58, 91, 31))
+        self.lab2.setGeometry(QtCore.QRect(50, 108, 91, 31))
         self.lab2.setObjectName("lab1")
-        self.lab2.setText("摄像头输入")
+        self.lab2.setText("Camera input")
         self.lab3 = QtWidgets.QLabel(self.widget)
-        self.lab3.setGeometry(QtCore.QRect(50, 98, 91, 31))
-        self.lab3.setObjectName("lab1")
-        self.lab3.setText("视频文件输入")
+        self.lab3.setGeometry(QtCore.QRect(50, 58, 91, 31))
+        self.lab3.setObjectName("lab3")
+        self.lab3.setText("Image input")
 
         # 视频流代码 OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
         self.RadioButtonCam = QtWidgets.QRadioButton(self.widget)
-        self.RadioButtonCam.setGeometry(QtCore.QRect(30, 58, 91, 31))
+        self.RadioButtonCam.setGeometry(QtCore.QRect(30, 108, 91, 31))
         self.RadioButtonCam.setObjectName("radioButtonCam")
 
         self.RadioButtonFile = QtWidgets.QRadioButton(self.widget)
-        self.RadioButtonFile.setGeometry(QtCore.QRect(30, 98, 91, 31))
+        self.RadioButtonFile.setGeometry(QtCore.QRect(30, 58, 91, 31))
         self.RadioButtonFile.setObjectName("radioButtonFile")
 
         self.Open = QtWidgets.QPushButton(self.centralwidget)
-        self.Open.setGeometry(QtCore.QRect(350, 500, 100, 41))
+        self.Open.setGeometry(QtCore.QRect(240, 608, 155, 40))
         self.Open.setObjectName("Open")
-        self.Open.setText("打开")
+        self.Open.setText("Open")
 
         self.Close = QtWidgets.QPushButton(self.centralwidget)
-        self.Close.setGeometry(QtCore.QRect(550, 500, 100, 41))
+        self.Close.setGeometry(QtCore.QRect(405, 608, 155, 40))
         self.Close.setObjectName("Close")
-        self.Close.setText("关闭")
+        self.Close.setText("Close")
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 摄像头显示的画面
         self.DispalyLabel = QtWidgets.QLabel(self.centralwidget)
-        self.DispalyLabel.setGeometry(QtCore.QRect(200, 0, 711, 411))
+        self.DispalyLabel.setGeometry(QtCore.QRect(10, 10, 650, 480))
         self.DispalyLabel.setMouseTracking(False)
         self.DispalyLabel.setText("")
         self.DispalyLabel.setObjectName("DispalyLabel")
@@ -67,15 +67,15 @@ class Ui_MainWindow(object):
 
 
         self.btn_open = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_open.setGeometry(QtCore.QRect(260, 440, 100, 51))
+        self.btn_open.setGeometry(QtCore.QRect(240, 558, 100, 40))
         self.btn_open.setObjectName("btn_open")
 
         self.btn_play = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_play.setGeometry(QtCore.QRect(420, 440, 71, 51))
+        self.btn_play.setGeometry(QtCore.QRect(350, 558, 100, 40))
         self.btn_play.setObjectName("btn_play")
 
         self.btn_stop = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_stop.setGeometry(QtCore.QRect(560, 440, 71, 51))
+        self.btn_stop.setGeometry(QtCore.QRect(460, 558, 100, 40))
         self.btn_stop.setObjectName("btn_stop")
 
         # self.lab_video = QtWidgets.QLabel(self.centralwidget)
@@ -100,6 +100,6 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.btn_open.setText(_translate("MainWindow", "打开"))
-        self.btn_play.setText(_translate("MainWindow", "播放"))
-        self.btn_stop.setText(_translate("MainWindow", "暂停"))
+        self.btn_open.setText(_translate("MainWindow", "Open"))
+        self.btn_play.setText(_translate("MainWindow", "Recognize"))
+        self.btn_stop.setText(_translate("MainWindow", "Clear"))
