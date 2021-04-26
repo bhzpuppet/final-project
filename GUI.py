@@ -58,12 +58,12 @@ class Ui_MainWindow(object):
 
 
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 摄像头显示的画面
-        self.DispalyLabel = QtWidgets.QLabel(self.centralwidget)
-        self.DispalyLabel.setGeometry(QtCore.QRect(10, 10, 650, 480))
-        self.DispalyLabel.setMouseTracking(False)
-        self.DispalyLabel.setText("")
-        self.DispalyLabel.setObjectName("DispalyLabel")
-        self.DispalyLabel.raise_()
+        self.DisplayLabel = QtWidgets.QLabel(self.centralwidget)
+        self.DisplayLabel.setGeometry(QtCore.QRect(10, 10, 650, 480))
+        self.DisplayLabel.setMouseTracking(False)
+        self.DisplayLabel.setText("")
+        self.DisplayLabel.setObjectName("DispalyLabel")
+        self.DisplayLabel.raise_()
 
 
         self.btn_open = QtWidgets.QPushButton(self.centralwidget)
