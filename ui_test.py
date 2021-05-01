@@ -1,7 +1,12 @@
+
+# This is a test file.
+# A program without thread that we create manually
+
 import os
 import threading
 import time
 import tensorflow as tf
+
 
 import cv2
 import dlib
@@ -191,6 +196,7 @@ import sys
 import numpy as np
 from ctypes import *
 image_path = ''
+flag = 0
 
 class myMainWindow(Ui_MainWindow, QMainWindow):
     def __init__(self):
@@ -201,10 +207,11 @@ class myMainWindow(Ui_MainWindow, QMainWindow):
         self.btn_play.clicked.connect(self.recognize)       # play
         self.btn_stop.clicked.connect(self.clean_image)       # pause
 
+# 视频流代码 OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 #         self.ui = Ui_MainWindow
 #         self.mainWnd = QMainWindow
 
-        # 默认输入为相机
+        # 默认视频源为相机
         self.RadioButtonCam.setChecked(True)
         self.isCamera = True
 
@@ -214,98 +221,79 @@ class myMainWindow(Ui_MainWindow, QMainWindow):
         self.RadioButtonCam.clicked.connect(self.radioButtonCam)
         self.RadioButtonFile.clicked.connect(self.radioButtonFile)
 
-        # 创建一个关闭事件并设为未触发
-        self.stopEvent = threading.Event()
-        self.stopEvent.clear()
-
-    def closeEvent(self, event):
-        # 重写主窗口的关闭按钮，因为程序运行中创建了一个线程。
-        # 如果在程序运行时没有结束这个进程，那么需要在退出程序时将其停止，否则点击程序窗口的退出后，程序将继续运行。
-        self.stopEvent.set()
+        # # 创建一个关闭事件并设为未触发
+        # self.stopEvent = threading.Event()
+        # self.stopEvent.clear()
 
     def open_image(self):
-        if not self.isCamera:
-            imgName, imgType = QFileDialog.getOpenFileName(self, "open image", "", "*.jpg;;*.png;;All Files(*)")
-            jpg = QPixmap(imgName).scaled(self.DisplayLabel.width(), self.DisplayLabel.height())
-            global image_path
-            image_path = imgName
-            print(image_path)
-            # jpg = QPixmap(imgName)
-            self.DisplayLabel.setPixmap(jpg)
-            self.text.setText(image_path)
-        else:
-            self.text.setText("Please select image input.")
-
+        imgName, imgType = QFileDialog.getOpenFileName(self, "open image", "", "*.jpg;;*.png;;All Files(*)")
+        jpg = QPixmap(imgName).scaled(self.DisplayLabel.width(), self.DisplayLabel.height())
+        global image_path
+        image_path = imgName
+        print(image_path)
+        # jpg = QPixmap(imgName)
+        self.DisplayLabel.setPixmap(jpg)
+        self.text.setText(image_path)
 
     def recognize(self):
-        if not self.isCamera:
-            if len(image_path) > 0:
-                img = cv2.imread(image_path)
-                gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-                dets = detector(gray_image, 1)
-                if not len(dets):
-                    print('Can`t get face.')
-                    self.text.setText('Can`t get face.')
-                    # cv2.imshow('img', img)
-                    # key = cv2.waitKey(30) & 0xff
-                    # if key == 27:
-                    #     sys.exit(0)
+        if len(image_path)>0:
+            img = cv2.imread(image_path)
+            gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            dets = detector(gray_image, 1)
+            if not len(dets):
+                print('Can`t get face.')
+                self.text.setText('Can`t get face.')
+                # cv2.imshow('img', img)
+                # key = cv2.waitKey(30) & 0xff
+                # if key == 27:
+                #     sys.exit(0)
 
-                for i, d in enumerate(dets):
-                    x1 = d.top() if d.top() > 0 else 0
-                    y1 = d.bottom() if d.bottom() > 0 else 0
-                    x2 = d.left() if d.left() > 0 else 0
-                    y2 = d.right() if d.right() > 0 else 0
-                    face = img[x1:y1, x2:y2]
-                    # 调整图片的尺寸
-                    face = cv2.resize(face, (size, size))
-                    print('Is this my face? %s' % is_my_face(face))
+            for i, d in enumerate(dets):
+                x1 = d.top() if d.top() > 0 else 0
+                y1 = d.bottom() if d.bottom() > 0 else 0
+                x2 = d.left() if d.left() > 0 else 0
+                y2 = d.right() if d.right() > 0 else 0
+                face = img[x1:y1, x2:y2]
+                # 调整图片的尺寸
+                face = cv2.resize(face, (size, size))
+                print('Is this my face? %s' % is_my_face(face))
 
-                    cv2.rectangle(img, (x2, x1), (y2, y1), (255, 0, 0), 3)
-                    put_text(face, img, x2, x1)
-                    text = "Result: " + str(is_my_face(face))
-                    self.text.setText(text)
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-                image = QImage(img.data, img.shape[1], img.shape[0], QImage.Format_RGB888)
-                self.DisplayLabel.setPixmap(QPixmap.fromImage(image))
-            else:
-                self.text.setText("Please open image first.")
+                cv2.rectangle(img, (x2, x1), (y2, y1), (255, 0, 0), 3)
+                put_text(face, img, x2, x1)
+                text = "Result: " + str(is_my_face(face))
+                self.text.setText(text)
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+            image = QImage(img.data, img.shape[1], img.shape[0], QImage.Format_RGB888)
+            self.DisplayLabel.setPixmap(QPixmap.fromImage(image))
         else:
-            self.text.setText("Please select image input.")
-
+            self.text.setText("Please open image first.")
 
 
     def clean_image(self):
-        if not self.isCamera:
-            global image_path
-            if len(image_path) > 0:
-                image_path = ''
-                self.DisplayLabel.clear()
-                self.text.setText('')
-            else:
-                self.text.setText("Please open image first.")
+        global image_path
+        if len(image_path)>0:
+            image_path = ''
+            self.DisplayLabel.clear()
+            self.text.setText('')
         else:
-            self.text.setText("Please select image input.")
+            self.text.setText("Please open image first.")
 
 
 
 # 视频流代码 OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
     def radioButtonCam(self):
         self.isCamera = True
-
     def close(self):
         # 关闭事件设为触发，关闭摄像头
-        self.stopEvent.set()
+        # self.stopEvent.set()
+        global flag
+        flag = 0
         self.Close.setEnabled(False)
 
     def radioButtonFile(self):
         self.close()
         # time.sleep(3000)
         self.isCamera = False
-        # self.Open.setEnable(False)
-        # self.btn_open.setEnabled(True)
-        # self.btn_play.setEnabled(True)
-        # self.btn_stop.setEnabled(True)
 
     def open(self):
         global image_path
@@ -319,11 +307,13 @@ class myMainWindow(Ui_MainWindow, QMainWindow):
             # self.cap = cv2.VideoCapture("rtsp://admin:Supcon1304@172.20.1.126:554/h264/ch1/main/av_stream")
             self.cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
             # 创建视频显示线程
-            th = threading.Thread(target=self.Display)
-            th.start()
-            self.stopEvent.clear()
+            global flag
+            flag = 1
             self.Open.setEnabled(False)
             self.Close.setEnabled(True)
+            self.Display()
+
+
 
 
     def Display(self):
@@ -385,13 +375,13 @@ class myMainWindow(Ui_MainWindow, QMainWindow):
             if self.isCamera:
                 cv2.waitKey(1)
             else:
-                self.close()
+                self.close
                 # cv2.waitKey(int(1000 / self.frameRate))
 
             # 判断关闭事件是否已触发
-            if True == self.stopEvent.is_set():
+            if flag == 0:
                 # 关闭事件置为未触发，清空显示label
-                self.stopEvent.clear()
+                # self.stopEvent.clear()
                 self.DisplayLabel.clear()
                 self.text.setText('')
                 # self.Close.setEnabled(False)

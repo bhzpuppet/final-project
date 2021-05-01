@@ -4,13 +4,17 @@ import tensorflow as tf
 
 import cv2
 import numpy as np
+np.set_printoptions(threshold=np.inf)
 import os
 import random
 import sys
+import time
 from sklearn.model_selection import train_test_split
+from tensorflow.contrib.layers import xavier_initializer
+
 
 # 图片路径
-face_path_dir = './test/'
+face_path_dir = './data/'
 face_path = []
 for i in range(10):
     name = face_path_dir + (str(i))
@@ -92,20 +96,23 @@ for lab in labs:
 # print(labels)
 labs = np.array(labels)
 
-
-# # 随机划分测试集与训练集
+# labs = np.array([[0,1] if lab == my_faces_path else [1,0] for lab in labs])
+# 随机划分测试集与训练集
+train_x,test_x,train_y,test_y = train_test_split(imgs, labs, test_size=0.1, random_state=0)
 # train_x,test_x,train_y,test_y = train_test_split(imgs, labs, test_size=0.1, random_state=random.randint(0,100))
-# # 参数：图片数据的总数，图片的高、宽、通道
-# train_x = train_x.reshape(train_x.shape[0], size, size, 3)
-# test_x = test_x.reshape(test_x.shape[0], size, size, 3)
-# 将数据转换成小于1的数
-imgs = imgs.astype('float32')/255.0
 
-print('size:%s' % len(imgs))
-# # 图片块，每次取100张图片
-# batch_size = 100
-# num_batch = len(train_x) // batch_size
-# print(num_batch)
+# 参数：图片数据的总数，图片的高、宽、通道
+train_x = train_x.reshape(train_x.shape[0], size, size, 3)
+test_x = test_x.reshape(test_x.shape[0], size, size, 3)
+# 将数据转换成小于1的数
+train_x = train_x.astype('float32')/255.0
+test_x = test_x.astype('float32')/255.0
+
+print('train size:%s, test size:%s' % (len(train_x), len(test_x)))
+# 图片块，每次取100张图片
+batch_size = 100
+num_batch = len(train_x) // batch_size
+print(num_batch)
 
 x = tf.placeholder(tf.float32, [None, size, size, 3])
 y_ = tf.placeholder(tf.float32, [None, 10])
@@ -212,17 +219,61 @@ def cnnLayer():
     out = tf.add(tf.matmul(dropf2, Wout), bout)
     return out
 
-out = cnnLayer()
+def cnnTrain():
+    out = cnnLayer()
 
-saver = tf.train.Saver()
-# saver = tf.train.import_meta_graph('./model/train_faces1000_1.model-1334.meta')
-# cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=out, labels=y_))
-with tf.Session() as sess:
-    saver.restore(sess, tf.train.latest_checkpoint('./model'))
-    # saver.restore(sess, './model/vgg9.model-9500')
+    cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=out, labels=y_))
+    final_loss = cross_entropy + tf.add_n(tf.get_collection('losses'))
+    global_step = tf.Variable(0)
+    starter_learning_rate = 0.01
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
+                                               500, 0.1, staircase=True)
+    # train_step = tf.train.AdamOptimizer(learning_rate).minimize(final_loss, global_step=global_step)
+    train_step = tf.train.AdamOptimizer(0.0001).minimize(final_loss)
+    # 比较标签是否相等，再求的所有数的平均值，tf.cast(强制转换类型)
     accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(out, 1), tf.argmax(y_, 1)), tf.float32))
-    acc1 = accuracy.eval({x:imgs[:1124], y_:labs[:1124], keep_prob_5:1.0, keep_prob_75:1.0})
-    acc2 = accuracy.eval({x: imgs[1125:], y_: labs[1125:], keep_prob_5: 1.0, keep_prob_75: 1.0})
-print('test-set accuracy:', (acc1+acc2)/2)
+    # 将loss与accuracy保存以供tensorboard使用
+    tf.summary.scalar('loss', final_loss)
+    tf.summary.scalar('accuracy', accuracy)
+    merged_summary_op = tf.summary.merge_all()
+    # 数据保存器的初始化
+    saver = tf.train.Saver()
 
+    with tf.Session() as sess:
 
+        sess.run(tf.global_variables_initializer())
+
+        summary_writer = tf.summary.FileWriter('./tmp', graph=tf.get_default_graph())
+        start_time = time.time()
+
+        for n in range(80):
+            # var = sess.graph.get_tensor_by_name('fc1:0')
+            # print(sess.run(var))
+             # 每次取100(batch_size)张图片
+            for i in range(num_batch):
+                batch_x = train_x[i*batch_size : (i+1)*batch_size]
+                batch_y = train_y[i*batch_size : (i+1)*batch_size]
+                # 开始训练数据，同时训练三个变量，返回三个数据
+                _,loss,summary = sess.run([train_step, cross_entropy, merged_summary_op],
+                                           feed_dict={x:batch_x,y_:batch_y, keep_prob_5:1.0,keep_prob_75:1.0})
+                summary_writer.add_summary(summary, n*num_batch+i)
+                # 打印损失
+                print(n*num_batch+i, loss)
+
+                if (n*num_batch+i) % 100 == 0:
+                    # 获取测试数据的准确率
+                    acc = accuracy.eval({x:test_x, y_:test_y, keep_prob_5:1.0, keep_prob_75:1.0})
+                    print(n*num_batch+i, acc)
+                    # print(learning_rate)
+                    # 准确率大于0.98时保存并退出
+                    if acc > 0.97 and n > 2:
+                        saver.save(sess, './model/leakyrelu_fc1.model', global_step=n * num_batch + i)
+                        print('acc > 0.99, exited!')
+                        sys.exit(0)
+            print(n+1)
+        print("time")
+        print(time.time()-start_time)
+        saver.save(sess, './model/leakyrelu_fc1.model', global_step=n * num_batch + i)
+        print('loop finished, exited!')
+
+cnnTrain()

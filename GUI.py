@@ -8,14 +8,14 @@ class Ui_MainWindow(object):
 
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(660, 678)
+        MainWindow.resize(670, 678)
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
 
         self.text = QtWidgets.QLineEdit(self.centralwidget)
-        self.text.setGeometry(QtCore.QRect(10, 510, 640, 20))
+        self.text.setGeometry(QtCore.QRect(10, 510, 650, 20))
         self.text.setObjectName("lab1")
         # self.text.setText("")
 
@@ -61,7 +61,7 @@ class Ui_MainWindow(object):
         self.DisplayLabel = QtWidgets.QLabel(self.centralwidget)
         self.DisplayLabel.setGeometry(QtCore.QRect(10, 10, 650, 480))
         self.DisplayLabel.setMouseTracking(False)
-        self.DisplayLabel.setText("")
+        self.DisplayLabel.setFrameShape(QtWidgets.QFrame.Box)
         self.DisplayLabel.setObjectName("DispalyLabel")
         self.DisplayLabel.raise_()
 

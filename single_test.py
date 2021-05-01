@@ -21,8 +21,7 @@ for i in range(10):
 # other_faces_path = './other_faces'
 size = 64
 
-imgs = []
-labs = []
+
 
 def getPaddingSize(img):
     h, w, _ = img.shape
@@ -43,6 +42,8 @@ def getPaddingSize(img):
     return top, bottom, left, right
 
 def readData(path , h=size, w=size):
+    imgs = []
+    labs = []
     for filename in os.listdir(path):
         if filename.endswith('.jpg'):
             filename = path + '/' + filename
@@ -56,41 +57,50 @@ def readData(path , h=size, w=size):
 
             imgs.append(img)
             labs.append(path)
+    labels = []
+    for lab in labs:
+        if lab == face_path[0]:
+            lab = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        elif lab == face_path[1]:
+            lab = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+        elif lab == face_path[2]:
+            lab = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+        elif lab == face_path[3]:
+            lab = [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+        elif lab == face_path[4]:
+            lab = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+        elif lab == face_path[5]:
+            lab = [0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+        elif lab == face_path[6]:
+            lab = [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
+        elif lab == face_path[7]:
+            lab = [0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
+        elif lab == face_path[8]:
+            lab = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+        elif lab == face_path[9]:
+            lab = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+        labels.append(lab)
+    imgs = np.array(imgs)
+    imgs = imgs.astype('float32') / 255.0
+    labs = np.array(labels)
+    return imgs, labs
 
 for path in face_path:
     readData(path)
+list_imgs = []
+list_labs = []
+for i in range(10):
+    print(i)
+    imgss, labss = readData(face_path[i],size,size)
+    list_imgs.append(imgss)
+    list_labs.append(labss)
 
 # readData(my_faces_path)
 # readData(other_faces_path)
 # 将图片数据与标签转换成数组
-imgs = np.array(imgs)
 
-# 标签转换
-labels = []
-for lab in labs:
-    if lab == face_path[0]:
-        lab = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-    elif lab == face_path[1]:
-        lab = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
-    elif lab == face_path[2]:
-        lab = [0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
-    elif lab == face_path[3]:
-        lab = [0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
-    elif lab == face_path[4]:
-        lab = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
-    elif lab == face_path[5]:
-        lab = [0, 0, 0, 0, 0, 1, 0, 0, 0, 0]
-    elif lab == face_path[6]:
-        lab = [0, 0, 0, 0, 0, 0, 1, 0, 0, 0]
-    elif lab == face_path[7]:
-        lab = [0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
-    elif lab == face_path[8]:
-        lab = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
-    elif lab == face_path[9]:
-        lab = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
-    labels.append(lab)
-# print(labels)
-labs = np.array(labels)
+
+
 
 
 # # 随机划分测试集与训练集
@@ -99,9 +109,10 @@ labs = np.array(labels)
 # train_x = train_x.reshape(train_x.shape[0], size, size, 3)
 # test_x = test_x.reshape(test_x.shape[0], size, size, 3)
 # 将数据转换成小于1的数
-imgs = imgs.astype('float32')/255.0
 
-print('size:%s' % len(imgs))
+
+# print('size:%s' % len(imgs))
+
 # # 图片块，每次取100张图片
 # batch_size = 100
 # num_batch = len(train_x) // batch_size
@@ -191,9 +202,7 @@ def cnnLayer():
     drop5 = dropout(pool5, keep_prob_5)
 
     # 全连接层1
-    # Wf1 = get_weight([2 * 2 * 512, 512], regularizer=0.01)
-    Wf1 = tf.Variable(initial_value=tf.truncated_normal([2 * 2 * 512, 512], stddev=0.1), name='fc1')
-    tf.add_to_collection('losses', tf.contrib.layers.l2_regularizer(0.01)(Wf1))
+    Wf1 = get_weight([2 * 2 * 512, 512], regularizer=0.01)
     bf1 = biasVariable([512])
     drop5_flat = tf.reshape(drop5, [-1, 2 * 2 * 512])
     dense1 = tf.nn.leaky_relu(tf.matmul(drop5_flat, Wf1) + bf1)
@@ -221,8 +230,11 @@ with tf.Session() as sess:
     saver.restore(sess, tf.train.latest_checkpoint('./model'))
     # saver.restore(sess, './model/vgg9.model-9500')
     accuracy = tf.reduce_mean(tf.cast(tf.equal(tf.argmax(out, 1), tf.argmax(y_, 1)), tf.float32))
-    acc1 = accuracy.eval({x:imgs[:1124], y_:labs[:1124], keep_prob_5:1.0, keep_prob_75:1.0})
-    acc2 = accuracy.eval({x: imgs[1125:], y_: labs[1125:], keep_prob_5: 1.0, keep_prob_75: 1.0})
-print('test-set accuracy:', (acc1+acc2)/2)
+    # acc1 = accuracy.eval({x:imgs[:1124], y_:labs[:1124], keep_prob_5:1.0, keep_prob_75:1.0})
+    # acc2 = accuracy.eval({x: imgs[1125:], y_: labs[1125:], keep_prob_5: 1.0, keep_prob_75: 1.0})
+    for i in range(10):
+        acc = accuracy.eval({x:list_imgs[i], y_:list_labs[i], keep_prob_5:1.0, keep_prob_75:1.0})
+        print(i,acc)
+# print('test-set accuracy:', (acc1+acc2)/2)
 
 
